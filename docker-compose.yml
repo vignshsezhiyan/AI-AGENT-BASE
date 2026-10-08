@@ -1,0 +1,16 @@
+services:
+  agent:
+    build: .
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./logs:/app/logs     # app.log + per-request log files survive container restarts
+      - ./data:/app/data     # data written by tools (e.g. follow_ups.jsonl)
+    restart: unless-stopped
+    read_only: true          # container filesystem is read-only
+    tmpfs: [/tmp, /home/agent/.npm]
+    security_opt: [no-new-privileges:true]
+    deploy:
+      resources:
+        limits: { cpus: "1.0", memory: 1g }

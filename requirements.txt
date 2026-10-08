@@ -1,0 +1,16 @@
+# Runtime - exact versions the test suite and live tests ran against.
+# Upgrade deliberately: bump, run pytest, then deploy.
+fastapi==0.142.4
+uvicorn[standard]==0.54.0
+pydantic==2.13.5
+pydantic-settings==2.15.0
+python-dotenv==1.2.4
+PyYAML==6.0.3
+openai==3.26.1
+mcp==2.3.0
+prometheus-client==0.26.0
+
+# Dev / test
+pytest==9.1.1
+pytest-asyncio==1.4.0
+httpx==0.28.1

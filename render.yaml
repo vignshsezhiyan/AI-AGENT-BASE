@@ -1,0 +1,35 @@
+# Render Blueprint - in Render: New + -> Blueprint -> pick this repo.
+# Secrets marked "sync: false" are asked for in the dashboard (never commit them).
+services:
+  - type: web
+    name: agent-template              # rename per agent, e.g. sales-assist-agent
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter                     # free plan sleeps after 15 min idle -> loses sessions + pending approvals
+    healthCheckPath: /health
+    autoDeploy: true
+    # disk:                           # uncomment to keep logs/ and data/ across deploys (paid plans only)
+    #   name: agent-data
+    #   mountPath: /app/data
+    #   sizeGB: 1
+    envVars:
+      - key: APP_ENV
+        value: production             # forces API keys, hides /docs, protects /metrics
+      - key: LOG_FORMAT
+        value: json                   # Render's log viewer + log streams read stdout
+      - key: LOG_LEVEL
+        value: INFO
+      - key: LOG_REQUEST_PAYLOADS
+        value: "false"                # no customer data in log files on a shared host
+      - key: LLM_BASE_URL
+        sync: false
+      - key: LLM_MODEL
+        value: gpt-oss-120b
+      - key: LLM_API_KEY
+        sync: false
+      - key: API_KEYS                 # "caller:key" pairs, e.g. web-ui:<32+ random chars>
+        sync: false
+      - key: COPILOT_MCP_URL
+        sync: false
+      - key: COPILOT_MCP_TOKEN
+        sync: false

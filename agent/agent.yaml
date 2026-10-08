@@ -1,0 +1,56 @@
+# =============================================================================
+#  AGENT DEFINITION  -  edit this file (+ prompt.md + tools.py) for each new agent
+#  Secrets never go here: write ${ENV_VAR} and put the value in .env
+# =============================================================================
+
+name: template_agent
+description: Example agent - replace with what this agent does, e.g. "Sales assistant for lead follow-ups".
+
+# How the LLM behaves (endpoint/model/key are in .env)
+llm:
+  temperature: 0.7          # lower (0.1-0.3) for repetitive, deterministic tasks
+  max_tokens: 4096          # answer + reasoning budget. gpt-oss-120b context is 32k: prompt + this must fit
+  reasoning_effort: low     # low | medium | high | null (if your server doesn't support it)
+
+# Safety limits
+limits:
+  max_iterations: 8              # max LLM <-> tool round trips per message
+  request_timeout_seconds: 180   # whole request
+  tool_timeout_seconds: 30       # each tool call
+  max_tool_result_chars: 20000   # bigger tool results are cut (protects context window + cost)
+  max_history_messages: 40       # conversation memory per session
+
+# Human-in-the-loop: these tools pause the agent until someone approves via the API.
+# Python tools can also set @tool(requires_approval=True).
+approval:
+  tools: []                       # e.g. ["zoho_delete_*", "zoho_*update*", "send_email"]
+  destructive_mcp_tools: true     # also gate MCP tools the server marks as destructive
+  on_reject: end_chat             # end_chat = rejected -> nothing runs, chat closed | continue = agent replies & goes on
+
+# Guardrails - checks done in CODE around the LLM (see app/security/)
+guardrails:
+  prompt_injection: block        # block | flag | off   - "ignore your instructions..." in the user message
+  tool_result_injection: flag    # flag | off           - instructions hidden inside tool results (emails, notes, web)
+  groundedness: flag             # off | flag | revise  - are the answer's facts backed by tool results? (+1 LLM call)
+  mask_pii: [card]               # card | email | phone - masked in answers (keep email/phone out if the job needs them)
+  max_answer_chars: 8000
+
+# MCP servers - tools are discovered automatically and named "<name>_<tool>".
+# Use include/exclude to expose ONLY the tools this agent needs (least privilege).
+mcp_servers:
+  - name: copilot                           # tools appear as copilot_getUser, copilot_getContacts
+    transport: http
+    url: ${COPILOT_MCP_URL}                 # value lives in .env
+    headers:
+      Authorization: "Bearer ${COPILOT_MCP_TOKEN}"
+    include: ["getUser", "getContacts"]     # least privilege: only these two (both read-only)
+    timeout_seconds: 60                     # hosted on Render free tier: cold start takes ~30s
+    required: false                         # agent still starts if Copilot is asleep/down
+
+# More servers follow the same pattern:
+#  - name: zoho
+#    transport: stdio
+#    command: npx
+#    args: ["-y", "mcp-remote", "${ZOHO_MCP_URL}", "--transport", "http-only"]
+#    include: ["*Leads*", "*Contacts*"]
+#    required: false
